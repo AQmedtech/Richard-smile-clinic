@@ -238,15 +238,20 @@
   </footer>
 
   <script>
-    const STORAGE_KEY = 'rssmc_micro_emr_v2';
+    const STORAGE_KEY = 'rssmc_micro_emr_v3';
 
-    // Synchronize initial data or read existing
     function getDB() {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     }
 
-    function updateLiveBeds() {
-      const db = getDB();
+    async function updateLiveBeds() {
+      let db = getDB();
+      if (window.location.protocol !== 'file:') {
+        try {
+          const res = await fetch('/api/state', { cache: 'no-store' });
+          if (res.ok) db = await res.json();
+        } catch (e) {}
+      }
       if (!db || !db.wards) return;
       let freeBeds = 0;
       Object.values(db.wards).forEach(w => {
@@ -263,13 +268,10 @@
       setTimeout(() => el.classList.add('hidden'), 3500);
     }
 
-    // Appointment submission
-    document.getElementById('website-booking-form').addEventListener('submit', e => {
+    // Appointment submission (syncs to Clinic Hub server + localStorage fallback)
+    document.getElementById('website-booking-form').addEventListener('submit', async e => {
       e.preventDefault();
-      let db = getDB();
-      if (!db) {
-        db = { appointments: [] };
-      }
+      let db = getDB() || { appointments: [] };
       if (!db.appointments) db.appointments = [];
 
       const apt = {
@@ -282,6 +284,16 @@
         status: 'Pending',
         bookedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
+
+      if (window.location.protocol !== 'file:') {
+        try {
+          await fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(apt)
+          });
+        } catch (err) {}
+      }
 
       db.appointments.unshift(apt);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(db));

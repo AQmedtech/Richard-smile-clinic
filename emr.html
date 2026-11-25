@@ -49,7 +49,24 @@
       </div>
 
       <!-- Right Header: Active Staff & Navigation -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Hub Sync Status + Backup/Restore -->
+        <div class="hidden md:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px]">
+          <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span id="sync-status-text" class="font-semibold text-slate-600">Local Mode</span>
+        </div>
+        <button onclick="openCloudSyncModal()" title="Auto Cloud Backup (Supabase)" class="text-xs font-semibold text-slate-700 hover:text-brand-700 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-brand-50 transition flex items-center gap-1">
+          <span>☁️ Cloud</span>
+          <span id="cloud-dot" class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+        </button>
+        <button onclick="downloadBackup()" title="Download JSON Backup" class="text-xs font-semibold text-slate-700 hover:text-brand-700 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-brand-50 transition">
+          💾 Backup
+        </button>
+        <label title="Restore from Backup JSON" class="cursor-pointer text-xs font-semibold text-slate-700 hover:text-brand-700 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-brand-50 transition">
+          📥 Restore
+          <input type="file" accept=".json" onchange="restoreBackup(event)" class="hidden" />
+        </label>
+
         <a href="index.html" class="hidden sm:inline-flex text-xs font-semibold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition">
           &larr; Public Website
         </a>
@@ -317,11 +334,295 @@
 
     let db = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || createInitialData();
     let currentTab = 'consultation';
+    let isServerSynced = false;
+    let lastServerUpdatedAt = null;
+
+    function updateSyncIndicator(connected) {
+      isServerSynced = connected;
+      const dot = document.getElementById('sync-status-dot');
+      const txt = document.getElementById('sync-status-text');
+      if (!dot || !txt) return;
+      if (connected) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+        txt.textContent = 'Clinic Hub Synced';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        txt.textContent = 'Browser Local Mode';
+      }
+    }
 
     function saveDB() {
+      db.updatedAt = new Date().toISOString();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
       updateTopBadges();
+      if (isServerSynced) {
+        const payload = {
+          patients: db.patients,
+          consultations: db.consultations,
+          appointments: db.appointments,
+          labs: db.labs,
+          prescriptions: db.prescriptions,
+          wards: db.wards
+        };
+        fetch('/api/state', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(res => { if (res && res.updatedAt) lastServerUpdatedAt = res.updatedAt; })
+        .catch(() => updateSyncIndicator(false));
+      }
     }
+
+    async function syncFromServer(isInitial = false) {
+      if (window.location.protocol === 'file:') {
+        updateSyncIndicator(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/state', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Server unavailable');
+        const serverData = await res.json();
+        updateSyncIndicator(true);
+
+        if (!isInitial && serverData.updatedAt && serverData.updatedAt === lastServerUpdatedAt) {
+          return;
+        }
+        lastServerUpdatedAt = serverData.updatedAt || null;
+
+        // Avoid interrupting typing in an input/textarea
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag);
+
+        db.patients = serverData.patients || db.patients;
+        db.consultations = serverData.consultations || db.consultations;
+        db.appointments = serverData.appointments || db.appointments;
+        db.labs = serverData.labs || db.labs;
+        db.prescriptions = serverData.prescriptions || db.prescriptions;
+        db.wards = serverData.wards || db.wards;
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+        updateTopBadges();
+        if (!isTyping && db.currentUser) {
+          renderCurrentTab();
+        }
+      } catch (e) {
+        updateSyncIndicator(false);
+      }
+    }
+
+    function downloadBackup() {
+      if (isServerSynced) {
+        window.location.href = '/api/backup';
+        showToast('Downloading Clinic Hub backup...');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rssmc-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Backup file downloaded.');
+    }
+
+    function restoreBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!parsed || !Array.isArray(parsed.patients) || !parsed.wards) {
+            return alert('Invalid backup file.');
+          }
+          if (!confirm('Restore all clinic records from this backup? Current data will be replaced.')) return;
+          db.patients = parsed.patients;
+          db.consultations = parsed.consultations || [];
+          db.appointments = parsed.appointments || [];
+          db.labs = parsed.labs || [];
+          db.prescriptions = parsed.prescriptions || [];
+          db.wards = parsed.wards;
+          if (isServerSynced) {
+            await fetch('/api/restore', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(parsed)
+            });
+          }
+          saveDB();
+          renderCurrentTab();
+          showToast('Clinic records restored successfully!');
+        } catch (err) {
+          alert('Could not read backup JSON file.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    const CLOUD_CFG_KEY = 'rssmc_cloud_cfg_v1';
+
+    function getLocalCloudCfg() {
+      return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY) || '{"supabaseUrl":"","supabaseKey":"","clinicId":"rssmc-jos","autoSync":true,"lastSyncedAt":null,"lastStatus":"Not configured"}');
+    }
+
+    function updateCloudDot(status) {
+      const dot = document.getElementById('cloud-dot');
+      if (!dot) return;
+      if (status === 'Synced') dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+      else if (status && status.includes('Offline')) dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
+      else dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-300';
+    }
+
+    async function pushSnapshotFromBrowser(cfg) {
+      if (!cfg.supabaseUrl || !cfg.supabaseKey || !navigator.onLine) return false;
+      try {
+        const base = cfg.supabaseUrl.replace(/\/+$/, '');
+        const res = await fetch(`${base}/rest/v1/clinic_backups?on_conflict=clinic_id`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': cfg.supabaseKey,
+            'Authorization': `Bearer ${cfg.supabaseKey}`,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({
+            clinic_id: cfg.clinicId || 'rssmc-jos',
+            updated_at: db.updatedAt || new Date().toISOString(),
+            payload: db
+          })
+        });
+        if (res.ok) {
+          cfg.lastSyncedAt = new Date().toISOString();
+          cfg.lastStatus = 'Synced';
+          localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify(cfg));
+          updateCloudDot('Synced');
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    async function openCloudSyncModal() {
+      let cfg = getLocalCloudCfg();
+      if (isServerSynced) {
+        try {
+          const r = await fetch('/api/cloud-config', { cache: 'no-store' });
+          if (r.ok) {
+            cfg = await r.json();
+            localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify(cfg));
+          }
+        } catch (e) {}
+      }
+      updateCloudDot(cfg.lastStatus);
+
+      openModal('Auto Cloud Backup (Supabase)', `
+        <div class="space-y-4 text-xs">
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+            <div>
+              <span class="text-slate-400 uppercase font-bold text-[10px] block">Cloud Status</span>
+              <strong class="text-slate-900 text-sm">${esc(cfg.lastStatus || 'Not configured')}</strong>
+              ${cfg.lastSyncedAt ? `<span class="block text-[11px] text-slate-500 mt-0.5">Last synced: ${new Date(cfg.lastSyncedAt).toLocaleString()}</span>` : ''}
+            </div>
+            <button onclick="triggerCloudSyncNow()" class="px-4 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs">
+              Sync Now
+            </button>
+          </div>
+
+          <form onsubmit="saveCloudConfig(event)" class="space-y-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Supabase Project URL</label>
+              <input id="cloud-url" type="url" value="${esc(cfg.supabaseUrl)}" placeholder="https://your-project.supabase.co"
+                class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Supabase Anon / Service Key</label>
+              <input id="cloud-key" type="password" value="${esc(cfg.supabaseKey)}" placeholder="eyJhbGciOi..."
+                class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Clinic ID</label>
+                <input id="cloud-clinic-id" type="text" value="${esc(cfg.clinicId || 'rssmc-jos')}"
+                  class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs" />
+              </div>
+              <div class="flex items-end pb-2">
+                <label class="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
+                  <input id="cloud-autosync" type="checkbox" ${cfg.autoSync !== false ? 'checked' : ''} class="rounded text-brand-600" />
+                  <span>Auto-sync when online</span>
+                </label>
+              </div>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs">
+              Save Cloud Settings &amp; Test Sync
+            </button>
+          </form>
+
+          <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900">
+            <strong>One-time Supabase SQL setup:</strong> Run this in your Supabase SQL Editor:
+            <pre class="mt-1.5 p-2 rounded bg-white border border-amber-200 overflow-x-auto text-[10px] text-slate-800">create table if not exists clinic_backups (
+  clinic_id text primary key,
+  updated_at timestamptz default now(),
+  payload jsonb not null
+);</pre>
+          </div>
+        </div>
+      `);
+    }
+
+    async function saveCloudConfig(e) {
+      e.preventDefault();
+      const cfg = {
+        supabaseUrl: document.getElementById('cloud-url').value.trim(),
+        supabaseKey: document.getElementById('cloud-key').value.trim(),
+        clinicId: document.getElementById('cloud-clinic-id').value.trim() || 'rssmc-jos',
+        autoSync: document.getElementById('cloud-autosync').checked
+      };
+      localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify(cfg));
+
+      if (isServerSynced) {
+        const res = await fetch('/api/cloud-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg)
+        });
+        const data = await res.json();
+        updateCloudDot(data.config.lastStatus);
+        showToast(data.syncResult && data.syncResult.ok ? 'Cloud backup synced to Supabase!' : `Saved (${data.config.lastStatus})`);
+      } else {
+        const ok = await pushSnapshotFromBrowser(cfg);
+        showToast(ok ? 'Synced to Supabase from browser!' : 'Settings saved (will sync when online).');
+      }
+      openCloudSyncModal();
+    }
+
+    async function triggerCloudSyncNow() {
+      const cfg = getLocalCloudCfg();
+      if (isServerSynced) {
+        const res = await fetch('/api/cloud-sync', { method: 'POST' });
+        const data = await res.json();
+        updateCloudDot(data.status);
+        if (data.ok) {
+          showToast('Synced to Supabase!');
+          return openCloudSyncModal();
+        }
+      }
+      // Fallback: if doctor's phone has mobile data on, push directly from browser
+      const ok = await pushSnapshotFromBrowser(cfg);
+      showToast(ok ? 'Synced to Supabase via device internet!' : 'Offline — queued until internet is available.');
+      openCloudSyncModal();
+    }
+
+    // Automatic browser-side cloud sync when a doctor's phone has internet
+    window.addEventListener('online', () => {
+      const cfg = getLocalCloudCfg();
+      if (cfg.autoSync && cfg.supabaseUrl && cfg.supabaseKey) {
+        pushSnapshotFromBrowser(cfg);
+      }
+    });
 
     function resetDemoData() {
       if (!confirm('Reset clinical data to clean demo state?')) return;
@@ -1323,6 +1624,8 @@
 
     // Initialize
     checkAuth();
+    syncFromServer(true);
+    setInterval(() => syncFromServer(false), 4000);
   </script>
 </body>
 </html>
