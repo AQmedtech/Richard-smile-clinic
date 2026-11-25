@@ -4,29 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Richard Smile Salem Medical Center | Jos, Plateau State</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0fdfa',
-              100: '#ccfbf1',
-              500: '#14b8a6',
-              600: '#0d9488',
-              700: '#0f766e',
-              800: '#115e59',
-              900: '#134e4a',
-            }
-          }
-        }
-      }
-    };
-  </script>
-  <style>
-    html { scroll-behavior: smooth; }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
 
@@ -44,13 +22,11 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <a href="#book-appointment" class="hidden sm:inline-flex px-3.5 py-2 rounded-lg text-sm font-semibold bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 transition">
-          Book Appointment
+        <a href="tel:+2348030000000" class="hidden sm:inline-flex px-3.5 py-2 rounded-lg text-sm font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition">
+          📞 24/7 Emergency
         </a>
-        <a href="emr.html"
-          class="px-3.5 sm:px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-sm transition flex items-center gap-2">
-          <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-          <span>Staff EMR Login</span>
+        <a href="#book-appointment" class="px-3.5 sm:px-4 py-2 rounded-lg text-sm font-semibold bg-brand-700 text-white hover:bg-brand-800 shadow-sm transition">
+          Book Appointment
         </a>
       </div>
     </div>
@@ -80,8 +56,8 @@
             <a href="#book-appointment" class="px-6 py-3 rounded-xl bg-white text-brand-800 font-bold hover:bg-brand-50 shadow-md transition">
               Book Appointment Online
             </a>
-            <a href="emr.html" class="px-6 py-3 rounded-xl bg-brand-700/60 border border-white/30 text-white font-semibold hover:bg-brand-700 transition flex items-center gap-2">
-              <span>Staff Portal</span> &rarr;
+            <a href="tel:+2348030000000" class="px-6 py-3 rounded-xl bg-brand-700/60 border border-white/30 text-white font-semibold hover:bg-brand-700 transition flex items-center gap-2">
+              <span>📞 Call Emergency Desk</span>
             </a>
           </div>
           <div class="mt-10 grid grid-cols-3 gap-4 border-t border-white/20 pt-6 max-w-md">
@@ -119,10 +95,14 @@
               </div>
             </div>
             <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-              <div class="w-9 h-9 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center font-bold shrink-0">🛡️</div>
+              <div class="w-9 h-9 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center font-bold shrink-0">📞</div>
               <div>
-                <p class="font-semibold text-slate-900">Secured Clinical Records</p>
-                <p class="text-slate-600">Patient folders are protected with access control for authorized healthcare providers only.</p>
+                <p class="font-semibold text-slate-900">24/7 Emergency &amp; Inquiries</p>
+                <p class="text-slate-600 mt-0.5">
+                  <a href="tel:+2348030000000" class="text-brand-700 font-semibold underline">+234 803 000 0000</a>
+                  &bull;
+                  <a href="https://wa.me/2348030000000" target="_blank" rel="noopener" class="text-emerald-700 font-semibold underline">WhatsApp Clinic</a>
+                </p>
               </div>
             </div>
           </div>

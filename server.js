@@ -33,10 +33,11 @@ function createInitialData() {
         age: 6,
         gender: 'Male',
         phone: '0812 554 8811',
+        allergies: 'None Known',
         vitals: { bp: '100/65', temp: '39.2°C', pulse: '112 bpm', weight: '19 kg' },
         complaint: 'High fever, vomiting twice, refusing food for 2 days',
         status: 'Awaiting Consultation',
-        registeredAt: 'Today, 09:45 AM'
+        registeredAt: `${today} 09:45`
       },
       {
         id: 'RSS-1001',
@@ -44,10 +45,11 @@ function createInitialData() {
         age: 42,
         gender: 'Male',
         phone: '0803 441 2098',
+        allergies: 'Penicillin (Skin Rash)',
         vitals: { bp: '130/85', temp: '37.8°C', pulse: '88 bpm', weight: '74 kg' },
         complaint: 'Persistent fever, severe chills & joint aches',
         status: 'With Doctor',
-        registeredAt: 'Today, 08:30 AM'
+        registeredAt: `${today} 08:30`
       },
       {
         id: 'RSS-1002',
@@ -369,7 +371,7 @@ const server = http.createServer(async (req, res) => {
 
   // CORS headers for local network convenience
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -404,6 +406,98 @@ const server = http.createServer(async (req, res) => {
       db.appointments.unshift(apt);
       writeDBAtomic(db);
       return sendJSON(res, 201, { ok: true, appointment: apt });
+    }
+
+    // 3b. Granular Conflict-Safe Endpoints (prevent concurrent overwrites)
+    if (req.method === 'POST' && urlPath === '/api/patients') {
+      const pt = JSON.parse(await readRequestBody(req));
+      const db = readDB();
+      pt.id = pt.id || 'RSS-' + (1001 + db.patients.length);
+      db.patients.unshift(pt);
+      if (pt.appointmentId) {
+        const apt = (db.appointments || []).find(a => a.id === pt.appointmentId);
+        if (apt) apt.status = 'Checked In';
+      }
+      writeDBAtomic(db);
+      return sendJSON(res, 201, { ok: true, patient: pt, updatedAt: db.updatedAt });
+    }
+
+    if (req.method === 'POST' && urlPath === '/api/consultations') {
+      const consult = JSON.parse(await readRequestBody(req));
+      const db = readDB();
+      consult.id = consult.id || 'CNS-' + String((db.consultations || []).length + 1).padStart(3, '0');
+      if (!Array.isArray(db.consultations)) db.consultations = [];
+      db.consultations.unshift(consult);
+      const pt = db.patients.find(p => p.id === consult.patientId);
+      if (pt) pt.status = 'Consulted';
+      writeDBAtomic(db);
+      return sendJSON(res, 201, { ok: true, consultation: consult, updatedAt: db.updatedAt });
+    }
+
+    if (req.method === 'POST' && urlPath === '/api/labs') {
+      const lab = JSON.parse(await readRequestBody(req));
+      const db = readDB();
+      lab.id = lab.id || 'LAB-' + String((db.labs || []).length + 1).padStart(2, '0');
+      db.labs.unshift(lab);
+      writeDBAtomic(db);
+      return sendJSON(res, 201, { ok: true, lab, updatedAt: db.updatedAt });
+    }
+
+    if (req.method === 'PATCH' && urlPath === '/api/labs') {
+      const body = JSON.parse(await readRequestBody(req));
+      const db = readDB();
+      const lab = db.labs.find(l => l.id === body.id);
+      if (!lab) return sendJSON(res, 404, { error: 'Lab order not found' });
+      lab.result = body.result;
+      lab.status = 'Completed';
+      lab.verifiedBy = body.verifiedBy || 'Lab Scientist';
+      lab.completedAt = body.completedAt || new Date().toISOString();
+      writeDBAtomic(db);
+      return sendJSON(res, 200, { ok: true, lab, updatedAt: db.updatedAt });
+    }
+
+    if (req.method === 'POST' && urlPath === '/api/prescriptions') {
+      const rx = JSON.parse(await readRequestBody(req));
+      const db = readDB();
+      rx.id = rx.id || 'RX-' + String((db.prescriptions || []).length + 1).padStart(2, '0');
+      db.prescriptions.unshift(rx);
+      writeDBAtomic(db);
+      return sendJSON(res, 201, { ok: true, rx, updatedAt: db.updatedAt });
+    }
+
+    if (req.method === 'PATCH' && urlPath === '/api/prescriptions') {
+      const body = JSON.parse(await readRequestBody(req));
+      const db = readDB();
+      const rx = db.prescriptions.find(r => r.id === body.id);
+      if (!rx) return sendJSON(res, 404, { error: 'Prescription not found' });
+      rx.status = 'Dispensed';
+      rx.dispensedBy = body.dispensedBy || 'Pharmacist';
+      rx.dispensedAt = body.dispensedAt || new Date().toISOString();
+      writeDBAtomic(db);
+      return sendJSON(res, 200, { ok: true, rx, updatedAt: db.updatedAt });
+    }
+
+    if (req.method === 'PATCH' && urlPath === '/api/wards') {
+      const body = JSON.parse(await readRequestBody(req));
+      const db = readDB();
+      const ward = db.wards[body.wardKey];
+      if (!ward || !ward.beds[body.bedIdx]) return sendJSON(res, 404, { error: 'Bed not found' });
+      const bed = ward.beds[body.bedIdx];
+      if (body.action === 'admit') {
+        bed.patientId = body.patientId;
+        bed.diagnosis = body.diagnosis || 'Inpatient Admission';
+        bed.admittedAt = body.admittedAt;
+        const pt = db.patients.find(p => p.id === body.patientId);
+        if (pt) pt.status = 'Admitted';
+      } else if (body.action === 'discharge') {
+        const pt = db.patients.find(p => p.id === bed.patientId);
+        if (pt) pt.status = 'Discharged';
+        bed.patientId = null;
+        bed.diagnosis = '';
+        bed.admittedAt = '';
+      }
+      writeDBAtomic(db);
+      return sendJSON(res, 200, { ok: true, updatedAt: db.updatedAt });
     }
 
     // 4. GET /api/backup — Download full JSON backup for USB/Cloud safety

@@ -4,31 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Richard Smile Salem Medical Center | Clinical EMR</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0fdfa',
-              100: '#ccfbf1',
-              200: '#99f6e4',
-              500: '#14b8a6',
-              600: '#0d9488',
-              700: '#0f766e',
-              800: '#115e59',
-              900: '#134e4a',
-            }
-          }
-        }
-      }
-    };
-  </script>
-  <style>
-    .fade-in { animation: fadeIn 0.15s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="bg-slate-100/70 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
 
@@ -102,41 +78,48 @@
         <p class="text-xs text-slate-500 mt-1">Access medical records and clinical workspaces</p>
       </div>
 
-      <form id="form-login" class="space-y-4">
+      <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Select Role</label>
-          <select id="login-role" class="w-full rounded-2xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          <label class="block text-xs font-bold text-slate-700 mb-1">Select Staff Role</label>
+          <select id="login-role" onchange="prefillStaffName()" class="w-full rounded-2xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
             <option value="doctor">Medical Doctor / Clinician</option>
             <option value="nurse">Nursing Staff / Matron</option>
             <option value="lab">Medical Laboratory Scientist</option>
             <option value="pharmacy">Pharmacist</option>
             <option value="records">Medical Records / Reception</option>
+            <option value="admin">Medical Director / Admin</option>
           </select>
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Staff Member Name</label>
-          <input required id="login-name" type="text" value="Dr. Gyang Pam (MO)" class="w-full rounded-2xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+          <input required id="login-name" type="text" value="Dr. Gyang Pam" class="w-full rounded-2xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Access PIN</label>
-          <input required id="login-pin" type="password" value="1234" class="w-full rounded-2xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+          <label class="block text-xs font-bold text-slate-700 mb-1">Personal Staff PIN</label>
+          <input required id="login-pin" type="password" placeholder="Enter 4-digit PIN (e.g. 1111)" class="w-full rounded-2xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
         </div>
 
         <button type="submit" class="w-full py-3.5 rounded-2xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-sm shadow transition">
-          Sign In to EMR
+          Verify PIN &amp; Sign In
         </button>
       </form>
 
       <div class="mt-6 pt-5 border-t border-slate-100">
-        <p class="text-[11px] font-bold text-slate-400 mb-2 uppercase text-center tracking-wider">Quick Demo Login</p>
+        <p class="text-[11px] font-bold text-slate-400 mb-2 uppercase text-center tracking-wider">Quick Demo Accounts (PINs)</p>
         <div class="grid grid-cols-2 gap-2 text-xs">
-          <button onclick="quickLogin('Dr. Gyang Pam', 'doctor')" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-brand-50 text-left font-medium">
-            🩺 Dr. Gyang <span class="text-[10px] text-slate-400 block">Doctor</span>
+          <button type="button" onclick="quickLogin('Dr. Gyang Pam', 'doctor')" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-brand-50 text-left font-medium">
+            🩺 Dr. Gyang <span class="text-[10px] text-slate-400 block">Doctor &bull; PIN 1111</span>
           </button>
-          <button onclick="quickLogin('Nurse Mary', 'nurse')" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-brand-50 text-left font-medium">
-            👩‍⚕️ Nurse Mary <span class="text-[10px] text-slate-400 block">Wards/Triage</span>
+          <button type="button" onclick="quickLogin('Nurse Mary Davou', 'nurse')" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-brand-50 text-left font-medium">
+            👩‍⚕️ Nurse Mary <span class="text-[10px] text-slate-400 block">Wards &bull; PIN 2222</span>
+          </button>
+          <button type="button" onclick="quickLogin('MLS Nanlop', 'lab')" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-brand-50 text-left font-medium">
+            🔬 MLS Nanlop <span class="text-[10px] text-slate-400 block">Lab &bull; PIN 3333</span>
+          </button>
+          <button type="button" onclick="quickLogin('Pharm. Bitrus', 'pharmacy')" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-brand-50 text-left font-medium">
+            💊 Pharm. Bitrus <span class="text-[10px] text-slate-400 block">Rx &bull; PIN 4444</span>
           </button>
         </div>
       </div>
@@ -213,9 +196,31 @@
   <script>
     const STORAGE_KEY = 'rssmc_micro_emr_v3';
 
+    const STAFF_PINS = {
+      doctor: { pin: '1111', defaultName: 'Dr. Gyang Pam', defaultTab: 'consultation' },
+      nurse: { pin: '2222', defaultName: 'Nurse Mary Davou', defaultTab: 'wards' },
+      lab: { pin: '3333', defaultName: 'MLS Nanlop', defaultTab: 'diagnostics' },
+      pharmacy: { pin: '4444', defaultName: 'Pharm. Bitrus', defaultTab: 'diagnostics' },
+      records: { pin: '5555', defaultName: 'Ruth Solomon', defaultTab: 'reception' },
+      admin: { pin: '9999', defaultName: 'Dr. R. Salem', defaultTab: 'consultation' }
+    };
+
+    function fullStamp() {
+      const d = new Date();
+      const date = d.toISOString().split('T')[0];
+      const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `${date} ${time}`;
+    }
+
+    function canRole(allowedRoles) {
+      if (!db.currentUser) return false;
+      return allowedRoles.includes(db.currentUser.role) || db.currentUser.role === 'admin';
+    }
+
     function createInitialData() {
+      const today = new Date().toISOString().split('T')[0];
       return {
-        currentUser: { name: 'Dr. Gyang Pam', role: 'doctor' },
+        currentUser: null,
         activePatientId: 'RSS-1003', // default selected in clinic
         activeWardKey: 'male',
         consultSubTab: 'notes', // 'notes', 'labs', 'rx', 'admission'
@@ -226,10 +231,11 @@
             age: 6,
             gender: 'Male',
             phone: '0812 554 8811',
+            allergies: 'None Known',
             vitals: { bp: '100/65', temp: '39.2°C', pulse: '112 bpm', weight: '19 kg' },
             complaint: 'High fever, vomiting twice, refusing food for 2 days',
             status: 'Awaiting Consultation',
-            registeredAt: 'Today, 09:45 AM'
+            registeredAt: `${today} 09:45`
           },
           {
             id: 'RSS-1001',
@@ -237,10 +243,11 @@
             age: 42,
             gender: 'Male',
             phone: '0803 441 2098',
+            allergies: 'Penicillin (Skin Rash)',
             vitals: { bp: '130/85', temp: '37.8°C', pulse: '88 bpm', weight: '74 kg' },
             complaint: 'Persistent fever, severe chills & joint aches',
             status: 'With Doctor',
-            registeredAt: 'Today, 08:30 AM'
+            registeredAt: `${today} 08:30`
           },
           {
             id: 'RSS-1002',
@@ -807,12 +814,21 @@
             </div>
           </div>
 
-          <!-- Presenting Complaint Strip -->
-          <div class="mt-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-start gap-3 text-xs">
-            <span class="text-amber-700 text-base leading-none">⚠️</span>
-            <div>
-              <strong class="text-amber-900 font-bold uppercase tracking-wider text-[11px]">Presenting Complaint:</strong>
-              <p class="text-amber-900 text-sm mt-0.5">${esc(activePatient.complaint)}</p>
+          <!-- Presenting Complaint & Allergy Alert -->
+          <div class="mt-4 grid sm:grid-cols-2 gap-3 text-xs">
+            <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-start gap-3">
+              <span class="text-amber-700 text-base leading-none">⚠️</span>
+              <div>
+                <strong class="text-amber-900 font-bold uppercase tracking-wider text-[11px]">Presenting Complaint:</strong>
+                <p class="text-amber-900 text-sm mt-0.5">${esc(activePatient.complaint)}</p>
+              </div>
+            </div>
+            <div class="p-4 rounded-2xl border flex items-start gap-3 ${activePatient.allergies && activePatient.allergies !== 'None Known' ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200/80'}">
+              <span class="text-base leading-none">${activePatient.allergies && activePatient.allergies !== 'None Known' ? '🚨' : '🛡️'}</span>
+              <div>
+                <strong class="font-bold uppercase tracking-wider text-[11px] ${activePatient.allergies && activePatient.allergies !== 'None Known' ? 'text-rose-800' : 'text-slate-600'}">Known Allergies / Alerts:</strong>
+                <p class="text-sm font-bold mt-0.5 ${activePatient.allergies && activePatient.allergies !== 'None Known' ? 'text-rose-700' : 'text-slate-700'}">${esc(activePatient.allergies || 'None Known')}</p>
+              </div>
             </div>
           </div>
 
@@ -1047,7 +1063,21 @@
       if (el) el.value = text;
     }
 
+    async function apiMutate(method, endpoint, body) {
+      if (!isServerSynced) return;
+      try {
+        const res = await fetch(endpoint, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data && data.updatedAt) lastServerUpdatedAt = data.updatedAt;
+      } catch (e) {}
+    }
+
     function saveClinicalNoteOnly() {
+      if (!canRole(['doctor'])) return alert('Access restricted: Only a Doctor/Admin can save clinical diagnoses.');
       const activePt = getPatient(db.activePatientId);
       if (!activePt) return;
 
@@ -1059,32 +1089,39 @@
 
       if (!dx) return alert('Please enter or select a working diagnosis.');
 
-      db.consultations.unshift({
+      const consult = {
         id: 'CNS-' + String(db.consultations.length + 1).padStart(3, '0'),
         patientId: activePt.id,
         doctorName: db.currentUser.name,
-        date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        date: fullStamp(),
         diagnosis: dx,
         notes: notes
-      });
+      };
 
+      db.consultations.unshift(consult);
       activePt.status = 'Consulted';
-      saveDB();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      updateTopBadges();
+      apiMutate('POST', '/api/consultations', consult);
       renderCurrentTab();
       showToast('Encounter saved successfully!');
     }
 
     function fastOrderLab(testName) {
-      db.labs.unshift({
+      if (!canRole(['doctor', 'nurse'])) return alert('Access restricted: Only Doctors/Nurses can order labs.');
+      const lab = {
         id: 'LAB-' + String(db.labs.length + 1).padStart(2, '0'),
         patientId: db.activePatientId,
         testName: testName,
         orderedBy: db.currentUser.name,
         status: 'Pending',
         result: '',
-        orderedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
-      saveDB();
+        orderedAt: fullStamp()
+      };
+      db.labs.unshift(lab);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      updateTopBadges();
+      apiMutate('POST', '/api/labs', lab);
       renderCurrentTab();
       showToast(`Ordered: ${testName}`);
     }
@@ -1097,15 +1134,20 @@
     }
 
     function fastPrescribe(med, dose) {
-      db.prescriptions.unshift({
+      if (!canRole(['doctor'])) return alert('Access restricted: Only a Doctor can prescribe medications.');
+      const rx = {
         id: 'RX-' + String(db.prescriptions.length + 1).padStart(2, '0'),
         patientId: db.activePatientId,
         medication: med,
         dosage: dose,
+        prescribedBy: db.currentUser.name,
         status: 'Pending',
-        prescribedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
-      saveDB();
+        prescribedAt: fullStamp()
+      };
+      db.prescriptions.unshift(rx);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      updateTopBadges();
+      apiMutate('POST', '/api/prescriptions', rx);
       renderCurrentTab();
       showToast(`Prescribed: ${med}`);
     }
@@ -1120,17 +1162,22 @@
     }
 
     function quickAdmitToWard(wardKey) {
+      if (!canRole(['doctor', 'nurse'])) return alert('Access restricted: Only Doctors or Nurses can admit patients.');
       const ward = db.wards[wardKey];
-      const freeBed = ward.beds.find(b => !b.patientId);
-      if (!freeBed) return alert('No free bed in this ward.');
+      const bedIdx = ward.beds.findIndex(b => !b.patientId);
+      if (bedIdx === -1) return alert('No free bed in this ward.');
+      const freeBed = ward.beds[bedIdx];
 
       const pt = getPatient(db.activePatientId);
+      const stamp = fullStamp();
       freeBed.patientId = pt.id;
       freeBed.diagnosis = pt.complaint || 'Inpatient Admission';
-      freeBed.admittedAt = 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      freeBed.admittedAt = stamp;
       pt.status = 'Admitted';
 
-      saveDB();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      updateTopBadges();
+      apiMutate('PATCH', '/api/wards', { action: 'admit', wardKey, bedIdx, patientId: pt.id, diagnosis: freeBed.diagnosis, admittedAt: stamp });
       renderCurrentTab();
       showToast(`${pt.name} admitted to ${ward.label} (${freeBed.bedNo})`);
     }
@@ -1285,7 +1332,12 @@
                       <span class="px-2 py-0.5 rounded-full text-[10px] ${l.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${esc(l.status)}</span>
                     </div>
                     <p class="text-slate-500 mt-1">Patient: <strong>${pt ? esc(pt.name) : l.patientId}</strong></p>
-                    ${l.result ? `<div class="mt-2 text-emerald-800 bg-emerald-50 p-2 rounded-xl font-medium">Result: ${esc(l.result)}</div>` : `
+                    ${l.result ? `
+                      <div class="mt-2 text-emerald-800 bg-emerald-50 p-2 rounded-xl font-medium flex items-center justify-between gap-2">
+                        <span>Result: ${esc(l.result)}</span>
+                        <button onclick="printLabSlip('${l.id}')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-[10px] hover:bg-slate-100 shrink-0">🖨️ Print Slip</button>
+                      </div>
+                    ` : `
                       <div class="mt-2 flex gap-2">
                         <input id="lab-res-${l.id}" type="text" placeholder="Enter findings..." class="rounded-xl border border-slate-300 px-3 py-1.5 text-xs flex-1" />
                         <button onclick="saveLabResult('${l.id}')" class="px-3 py-1.5 bg-brand-700 text-white rounded-xl font-bold text-xs">Save</button>
@@ -1314,11 +1366,14 @@
                       <span class="text-slate-500">${esc(r.dosage)}</span>
                       <p class="text-[11px] text-slate-400 mt-0.5">Patient: ${pt ? esc(pt.name) : r.patientId}</p>
                     </div>
-                    ${r.status === 'Pending' ? `
-                      <button onclick="dispenseRx('${r.id}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs shrink-0">
-                        Dispense
-                      </button>
-                    ` : '<span class="text-emerald-700 font-bold text-xs shrink-0">Dispensed ✓</span>'}
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button onclick="printRxSlip('${r.id}')" class="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-100">🖨️ Print</button>
+                      ${r.status === 'Pending' ? `
+                        <button onclick="dispenseRx('${r.id}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs">
+                          Dispense
+                        </button>
+                      ` : '<span class="text-emerald-700 font-bold text-xs">Dispensed ✓</span>'}
+                    </div>
                   </div>
                 `;
               }).join('')}
@@ -1329,6 +1384,7 @@
     }
 
     function saveLabResult(labId) {
+      if (!canRole(['lab', 'doctor'])) return alert('Access restricted: Only Lab Scientists or Doctors can save lab results.');
       const input = document.getElementById('lab-res-' + labId);
       const val = input ? input.value.trim() : '';
       if (!val) return alert('Enter lab result.');
@@ -1336,17 +1392,26 @@
       if (l) {
         l.result = val;
         l.status = 'Completed';
-        saveDB();
+        l.verifiedBy = db.currentUser.name;
+        l.completedAt = fullStamp();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+        updateTopBadges();
+        apiMutate('PATCH', '/api/labs', { id: labId, result: val, verifiedBy: db.currentUser.name, completedAt: l.completedAt });
         renderCurrentTab();
         showToast('Lab result saved.');
       }
     }
 
     function dispenseRx(rxId) {
+      if (!canRole(['pharmacy'])) return alert('Access restricted: Only a Pharmacist can dispense medications.');
       const r = db.prescriptions.find(x => x.id === rxId);
       if (r) {
         r.status = 'Dispensed';
-        saveDB();
+        r.dispensedBy = db.currentUser.name;
+        r.dispensedAt = fullStamp();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+        updateTopBadges();
+        apiMutate('PATCH', '/api/prescriptions', { id: rxId, dispensedBy: db.currentUser.name, dispensedAt: r.dispensedAt });
         renderCurrentTab();
         showToast('Prescription dispensed.');
       }
@@ -1382,6 +1447,10 @@
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Phone</label>
                 <input id="intake-phone" type="tel" placeholder="0803..." class="w-full rounded-2xl border border-slate-300 p-2.5" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Known Allergies</label>
+                <input id="intake-allergies" type="text" placeholder="None Known (or e.g. Penicillin)" class="w-full rounded-2xl border border-slate-300 p-2.5" />
               </div>
               <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
                 <input id="intake-bp" type="text" placeholder="BP (120/80)" class="rounded-xl border border-slate-300 p-2 text-[11px]" />
@@ -1430,21 +1499,25 @@
       const age = document.getElementById('intake-age').value;
       const gender = document.getElementById('intake-gender').value;
       const phone = document.getElementById('intake-phone').value.trim();
+      const allergies = document.getElementById('intake-allergies').value.trim() || 'None Known';
       const bp = document.getElementById('intake-bp').value.trim() || '120/80';
       const temp = document.getElementById('intake-temp').value.trim() || '36.8°C';
       const complaint = document.getElementById('intake-complaint').value.trim();
 
-      db.patients.unshift({
+      const pt = {
         id: newId,
-        name, age, gender, phone,
+        name, age, gender, phone, allergies,
         vitals: { bp, temp, pulse: '76 bpm', weight: '70 kg' },
         complaint,
         status: 'Awaiting Consultation',
-        registeredAt: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
+        registeredAt: fullStamp()
+      };
 
+      db.patients.unshift(pt);
       db.activePatientId = newId;
-      saveDB();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      updateTopBadges();
+      apiMutate('POST', '/api/patients', pt);
       setTab('consultation');
       showToast(`${name} queued for doctor.`);
     }
@@ -1454,34 +1527,44 @@
       if (!apt) return;
       apt.status = 'Checked In';
       const newId = 'RSS-' + (1001 + db.patients.length);
-      db.patients.unshift({
+      const pt = {
         id: newId,
         name: apt.name,
         age: 30,
         gender: 'Female',
         phone: apt.phone,
+        allergies: 'None Known',
         vitals: { bp: '120/80', temp: '36.8°C', pulse: '76 bpm', weight: '65 kg' },
         complaint: apt.notes || apt.department,
         status: 'Awaiting Consultation',
-        registeredAt: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
+        registeredAt: fullStamp(),
+        appointmentId: apt.id
+      };
+      db.patients.unshift(pt);
       db.activePatientId = newId;
-      saveDB();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      updateTopBadges();
+      apiMutate('POST', '/api/patients', pt);
       setTab('consultation');
       showToast(`${apt.name} checked in & queued for Doctor.`);
     }
 
     function dischargeBed(wardKey, idx) {
-      if (!confirm('Discharge patient from this bed?')) return;
+      if (!canRole(['doctor', 'nurse'])) return alert('Access restricted: Only Doctors or Nurses can discharge beds.');
       const bed = db.wards[wardKey].beds[idx];
       const pt = getPatient(bed.patientId);
+      const prevDx = bed.diagnosis;
+      if (!confirm('Discharge patient from this bed?')) return;
       if (pt) pt.status = 'Discharged';
       bed.patientId = null;
       bed.diagnosis = '';
       bed.admittedAt = '';
-      saveDB();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      updateTopBadges();
+      apiMutate('PATCH', '/api/wards', { action: 'discharge', wardKey, bedIdx: idx });
       renderCurrentTab();
       showToast('Patient discharged.');
+      if (pt) printDischargeSlip(pt, db.wards[wardKey].label, prevDx);
     }
 
     function openAdmitModal(wardKey, bedIdx) {
@@ -1512,13 +1595,16 @@
       const dx = document.getElementById('modal-admit-dx').value.trim();
       const bed = db.wards[wardKey].beds[bedIdx];
       const pt = getPatient(ptId);
+      const stamp = fullStamp();
 
       bed.patientId = ptId;
       bed.diagnosis = dx;
-      bed.admittedAt = 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      bed.admittedAt = stamp;
       if (pt) pt.status = 'Admitted';
 
-      saveDB();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      updateTopBadges();
+      apiMutate('PATCH', '/api/wards', { action: 'admit', wardKey, bedIdx, patientId: ptId, diagnosis: dx, admittedAt: stamp });
       closeModal();
       renderCurrentTab();
       showToast(`Admitted to Bed ${bed.bedNo}`);
@@ -1539,6 +1625,7 @@
           <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-3">
             <div><span class="text-slate-400 block text-[10px] uppercase">Age / Gender</span><strong>${esc(pt.age)} / ${esc(pt.gender)}</strong></div>
             <div><span class="text-slate-400 block text-[10px] uppercase">Phone</span><strong>${esc(pt.phone || '—')}</strong></div>
+            <div class="col-span-2"><span class="text-slate-400 block text-[10px] uppercase">Allergies</span><strong class="${pt.allergies && pt.allergies !== 'None Known' ? 'text-rose-700' : 'text-slate-800'}">${esc(pt.allergies || 'None Known')}</strong></div>
             <div class="col-span-2"><span class="text-slate-400 block text-[10px] uppercase">Vitals</span><strong>BP ${esc(pt.vitals.bp || '--')}, Temp ${esc(pt.vitals.temp || '--')}, Pulse ${esc(pt.vitals.pulse || '--')}, Wt ${esc(pt.vitals.weight || '--')}</strong></div>
           </div>
 
@@ -1590,8 +1677,106 @@
     }
 
     // =========================================================
-    // AUTH LOGIC
+    // PRINTABLE CLINICAL SLIPS (Lab, Rx, Discharge)
     // =========================================================
+    function openPrintModal(docTitle, bodyHtml) {
+      openModal(docTitle, `
+        <div class="space-y-4 text-xs">
+          <div class="border-b border-slate-200 pb-3">
+            <h4 class="font-black text-slate-900 text-base">Richard Smile Salem Medical Center</h4>
+            <p class="text-slate-500">No. 15 Shalom, Jenta Mangoro, Jos, Plateau State &bull; Tel: +234 803 000 0000</p>
+            <p class="text-[11px] text-slate-400 mt-1">Printed: ${fullStamp()}</p>
+          </div>
+          ${bodyHtml}
+          <div class="pt-6 border-t border-slate-200 flex items-center justify-between">
+            <div>
+              <p class="text-slate-400">Authorized Signature / Stamp</p>
+              <p class="font-bold text-slate-800 mt-4">____________________________</p>
+            </div>
+            <button onclick="window.print()" class="no-print px-5 py-2.5 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow">
+              🖨️ Print Slip
+            </button>
+          </div>
+        </div>
+      `);
+    }
+
+    function printLabSlip(labId) {
+      const l = db.labs.find(x => x.id === labId);
+      if (!l) return;
+      const pt = getPatient(l.patientId) || { name: l.patientId, id: l.patientId, age: '--', gender: '--' };
+      openPrintModal(`Laboratory Report (${l.id})`, `
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <p><strong>Patient:</strong> ${esc(pt.name)} (${esc(pt.id)}) &bull; ${esc(pt.age)} yrs / ${esc(pt.gender)}</p>
+          <p><strong>Investigation:</strong> ${esc(l.testName)}</p>
+          <p><strong>Ordered By:</strong> ${esc(l.orderedBy || 'Clinician')}</p>
+        </div>
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+          <p class="text-[11px] uppercase font-bold text-emerald-800">Verified Laboratory Result</p>
+          <p class="text-sm font-bold text-slate-900 mt-1">${esc(l.result || 'Pending')}</p>
+          <p class="text-[11px] text-slate-500 mt-1">Verified By: ${esc(l.verifiedBy || 'MLS')}</p>
+        </div>
+      `);
+    }
+
+    function printRxSlip(rxId) {
+      const r = db.prescriptions.find(x => x.id === rxId);
+      if (!r) return;
+      const pt = getPatient(r.patientId) || { name: r.patientId, id: r.patientId, age: '--', gender: '--' };
+      openPrintModal(`Pharmacy Prescription (${r.id})`, `
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <p><strong>Patient:</strong> ${esc(pt.name)} (${esc(pt.id)}) &bull; ${esc(pt.age)} yrs / ${esc(pt.gender)}</p>
+          <p><strong>Allergies:</strong> ${esc(pt.allergies || 'None Known')}</p>
+        </div>
+        <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-200 space-y-1">
+          <p class="text-[11px] uppercase font-bold text-indigo-800">Prescribed Medication</p>
+          <p class="text-sm font-bold text-slate-900">${esc(r.medication)}</p>
+          <p class="text-slate-700 font-semibold">${esc(r.dosage)}</p>
+          <p class="text-[11px] text-slate-500 pt-1">Prescribed By: ${esc(r.prescribedBy || 'Clinician')} &bull; Status: ${esc(r.status)}</p>
+        </div>
+      `);
+    }
+
+    function printDischargeSlip(pt, wardLabel, diagnosis) {
+      openPrintModal(`Inpatient Discharge Summary (${pt.id})`, `
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <p><strong>Patient:</strong> ${esc(pt.name)} (${esc(pt.id)}) &bull; ${esc(pt.age)} yrs / ${esc(pt.gender)}</p>
+          <p><strong>Discharged From:</strong> ${esc(wardLabel)}</p>
+          <p><strong>Diagnosis:</strong> ${esc(diagnosis || 'Recovered')}</p>
+          <p><strong>Discharging Officer:</strong> ${esc(db.currentUser ? db.currentUser.name : 'Clinician')}</p>
+        </div>
+      `);
+    }
+
+    // =========================================================
+    // AUTH LOGIC (Real PIN Verification + Role Landing)
+    // =========================================================
+    function prefillStaffName() {
+      const role = document.getElementById('login-role').value;
+      const cfg = STAFF_PINS[role];
+      if (cfg) {
+        document.getElementById('login-name').value = cfg.defaultName;
+      }
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const role = document.getElementById('login-role').value;
+      const name = document.getElementById('login-name').value.trim();
+      const pin = document.getElementById('login-pin').value.trim();
+      const expected = STAFF_PINS[role] ? STAFF_PINS[role].pin : '1234';
+
+      if (pin !== expected) {
+        return alert(`Invalid PIN for ${role.toUpperCase()} role. (Demo PIN is ${expected})`);
+      }
+
+      db.currentUser = { name, role };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      setTab(STAFF_PINS[role].defaultTab || 'consultation');
+      checkAuth();
+      showToast(`Welcome, ${name}`);
+    }
+
     function checkAuth() {
       const loginView = document.getElementById('login-view');
       const emrView = document.getElementById('emr-view');
@@ -1610,7 +1795,8 @@
 
     function quickLogin(name, role) {
       db.currentUser = { name, role };
-      saveDB();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      setTab((STAFF_PINS[role] && STAFF_PINS[role].defaultTab) || 'consultation');
       checkAuth();
       showToast(`Welcome, ${name}`);
     }
@@ -1618,7 +1804,7 @@
     function handleLogout() {
       if (!confirm('Sign out?')) return;
       db.currentUser = null;
-      saveDB();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
       checkAuth();
     }
 
